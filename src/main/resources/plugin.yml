@@ -1,0 +1,4 @@
+name: Quicksleep
+version: 1.0.0
+description: 睡觉插件。
+main: com.littlesheep.quicksleep.Main
