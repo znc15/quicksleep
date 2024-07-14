@@ -9,6 +9,7 @@
 #          \|__|                                  \|_________|
 #
 #
-#Version 1.0.0
+#Version 1.1.0
 #
-night-skipped: "夜晚已被跳过，因为足够多的玩家正在睡觉。"
+sleepers-count: "&e当前有 {current} 人在睡觉，还需要 {required} 人才能跳过夜晚。"
+night-skipped: "&b夜晚已被跳过！"

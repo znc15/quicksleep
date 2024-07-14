@@ -4,9 +4,11 @@ import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerBedEnterEvent;
+import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -41,7 +43,7 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     private String getMessage(String key) {
-        return messagesConfig.getString(key, "Message not found: " + key);
+        return Utils.colorize(messagesConfig.getString(key, "Message not found: " + key));
     }
 
     private int calculateRequiredSleepers() {
@@ -58,19 +60,37 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerBedEnter(PlayerBedEnterEvent event) {
         if (event.getBedEnterResult() == PlayerBedEnterEvent.BedEnterResult.OK) {
-            int requiredSleepers = calculateRequiredSleepers();
-            long currentSleepers = Bukkit.getServer().getOnlinePlayers().stream()
-                    .filter(player -> player.isSleeping()).count();
-            if (currentSleepers + 1 >= requiredSleepers) {
-                for (World world : Bukkit.getServer().getWorlds()) {
-                    if (world.getEnvironment() == World.Environment.NORMAL) {
-                        world.setTime(1000);
-                        world.setStorm(false);
-                        world.setThundering(false);
-                        Bukkit.getServer().broadcastMessage(getMessage("night-skipped"));
-                    }
+            updateSleepersCount();
+        }
+    }
+
+    @EventHandler
+    public void onPlayerBedLeave(PlayerBedLeaveEvent event) {
+        updateSleepersCount();
+    }
+
+    private void updateSleepersCount() {
+        int requiredSleepers = calculateRequiredSleepers();
+        long currentSleepers = Bukkit.getServer().getOnlinePlayers().stream()
+                .filter(Player::isSleeping).count();
+        if (currentSleepers >= requiredSleepers) {
+            boolean nightSkipped = false;
+            for (World world : Bukkit.getServer().getWorlds()) {
+                if (world.getEnvironment() == World.Environment.NORMAL) {
+                    world.setTime(1000);
+                    world.setStorm(false);
+                    world.setThundering(false);
+                    nightSkipped = true;
                 }
             }
+            if (nightSkipped) {
+                Bukkit.getServer().broadcastMessage(getMessage("night-skipped"));
+            }
+        } else {
+            String message = getMessage("sleepers-count")
+                    .replace("{current}", String.valueOf(currentSleepers))
+                    .replace("{required}", String.valueOf(requiredSleepers));
+            Bukkit.getServer().broadcastMessage(message);
         }
     }
 
@@ -81,3 +101,4 @@ public class Main extends JavaPlugin implements Listener {
         getLogger().info("==========================================");
     }
 }
+
