@@ -13,3 +13,5 @@
 #
 sleepers-count: "&e当前有 {current} 人在睡觉，还需要 {required} 人才能跳过夜晚。"
 night-skipped: "&b夜晚已被跳过！"
+config-reloaded: "&a配置已重新加载。"
+no-permission: "&c你没有权限执行这个命令。"

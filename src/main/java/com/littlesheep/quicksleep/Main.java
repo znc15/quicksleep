@@ -2,13 +2,14 @@ package com.littlesheep.quicksleep;
 
 import org.bukkit.Bukkit;
 import org.bukkit.World;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerBedEnterEvent;
-import org.bukkit.event.player.PlayerBedLeaveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -60,16 +61,11 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerBedEnter(PlayerBedEnterEvent event) {
         if (event.getBedEnterResult() == PlayerBedEnterEvent.BedEnterResult.OK) {
-            updateSleepersCount();
+            Bukkit.getScheduler().runTaskLater(this, this::updateSleepersCountAndSkipNight, 1L);
         }
     }
 
-    @EventHandler
-    public void onPlayerBedLeave(PlayerBedLeaveEvent event) {
-        updateSleepersCount();
-    }
-
-    private void updateSleepersCount() {
+    private void updateSleepersCountAndSkipNight() {
         int requiredSleepers = calculateRequiredSleepers();
         long currentSleepers = Bukkit.getServer().getOnlinePlayers().stream()
                 .filter(Player::isSleeping).count();
@@ -85,6 +81,12 @@ public class Main extends JavaPlugin implements Listener {
             }
             if (nightSkipped) {
                 Bukkit.getServer().broadcastMessage(getMessage("night-skipped"));
+                // 让所有正在睡觉的玩家起床
+                Bukkit.getServer().getOnlinePlayers().forEach(player -> {
+                    if (player.isSleeping()) {
+                        player.wakeup(false);
+                    }
+                });
             }
         } else {
             String message = getMessage("sleepers-count")
@@ -95,10 +97,25 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (command.getName().equalsIgnoreCase("reloadconfig")) {
+            if (sender.isOp()) {
+                reloadConfig();
+                loadMessagesConfig();
+                sender.sendMessage(getMessage("config-reloaded"));
+                return true;
+            } else {
+                sender.sendMessage(getMessage("no-permission"));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
     public void onDisable() {
         getLogger().info("==========================================");
         getLogger().info("Goodbye! 插件已关闭。");
         getLogger().info("==========================================");
     }
 }
-
